@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="es" data-theme="day">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta id="metaTheme" name="theme-color" content="#e9f4ff">
+  <title>HandShake</title>
+  <!-- Tema día/noche antes del primer pintado (día: 6:00 a 20:00) -->
+  <script>
+    (function () {
+      var h = new Date().getHours(), m = 'auto';
+      try { m = (JSON.parse(localStorage.getItem('jerkon.v3') || '{}').settings || {}).theme || 'auto'; } catch (e) {}
+      document.documentElement.dataset.theme = m === 'day' || m === 'night' ? m : ((h >= 6 && h < 20) ? 'day' : 'night');
+    })();
+  </script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Fondo: burbujas de colores que flotan despacio -->
+  <div class="bg" aria-hidden="true">
+    <b class="orb o1"></b><b class="orb o2"></b><b class="orb o3"></b><b class="orb o4"></b><b class="orb o5"></b>
+    <b class="orb glassy g1"></b><b class="orb glassy g2"></b><b class="orb glassy g3"></b>
+  </div>
+
+  <!-- Pantalla de bienvenida -->
+  <section id="splash" class="splash" tabindex="0" aria-label="Pantalla de bienvenida">
+    <p class="splash-top">TELLO APPS</p>
+    <div class="splash-mid">
+      <div class="splash-glass glass"><h1 class="splash-title">HandShake</h1></div>
+    </div>
+    <button id="splashHint" class="splash-hint" type="button">
+      <svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg>
+      <span>Desliza hacia arriba</span>
+    </button>
+  </section>
+
+  <!-- Inicio de sesión -->
+  <section id="login" class="login hidden" aria-label="Iniciar sesión">
+    <div class="glass login-card">
+      <h1>HandShake</h1>
+      <p class="muted">Inicia sesión con Google para crear tu perfil.</p>
+      <div id="gBtn" class="g-btn"></div>
+      <button id="gFallback" class="btn wide gbtn" type="button"><b>G</b> Continuar con Google</button>
+      <p id="loginMsg" class="muted small"></p>
+      <button id="loginSkip" class="btn wide" type="button">Continuar sin cuenta</button>
+    </div>
+  </section>
+
+  <!-- App -->
+  <div id="appShell" class="shell">
+    <div id="app" class="app hidden">
+      <header class="top">
+        <button id="hdrAva" class="hdr-ava" aria-label="Mi perfil"></button>
+        <div class="top-txt">
+          <p class="hello-row"><span id="hello" class="muted small nm">Hola</span><span id="streakPill" class="streak-pill"></span><span id="rollPill" class="roll-pill" aria-label="Rollos de papel"></span></p>
+          <h1 id="viewTitle">Inicio</h1>
+        </div>
+        <button id="openSettings" class="icon-btn glass" aria-label="Ajustes">
+          <svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+        </button>
+      </header>
+
+      <div class="views">
+        <!-- INICIO -->
+        <section id="view-inicio" class="view active">
+          <div class="seg glass subnav" data-idx="0">
+            <button data-goto="inicio">Resumen</button>
+            <button data-goto="historial">Historial</button>
+          </div>
+          <div class="glass card streak-card">
+            <div class="streak-main">
+              <span id="fire" class="fire">🔥</span>
+              <div>
+                <p id="streakNum" class="streak-num">0</p>
+                <p class="muted">días seguidos</p>
+              </div>
+            </div>
+            <div id="weekDots" class="week-dots"></div>
+            <p id="streakHint" class="muted small"></p>
+            <p id="shieldInfo" class="muted small shield-info"></p>
+            <button id="todayCta" class="btn primary wide" type="button">Añadir registro de hoy</button>
+          </div>
+          <div id="goalCard" class="glass card goal-card hidden">
+            <span id="goalIco" class="goal-ico" aria-hidden="true">🎯</span>
+            <div class="goal-info">
+              <small class="muted goal-kicker">Meta de hoy</small>
+              <strong id="goalText"></strong>
+              <small id="goalSub" class="muted"></small>
+            </div>
+            <button id="goalBtn" class="btn sm" type="button">Hecho</button>
+          </div>
+          <div id="weeklyCard" class="glass card weekly-card hidden">
+            <h3>Tu semana</h3>
+            <div class="chips">
+              <div class="chip"><span id="wkDays">0</span><small>días con registro</small></div>
+              <div class="chip"><span id="wkMood">—</span><small>ánimo medio</small></div>
+            </div>
+            <div class="chips">
+              <div class="chip"><span id="wkBest">—</span><small>mejor día</small></div>
+              <div class="chip"><span id="wkDiff">=</span><small>días vs semana pasada</small></div>
+            </div>
+            <p id="wkMsg" class="muted"></p>
+            <button id="wkOk" class="btn wide" type="button">Entendido</button>
+          </div>
+          <div class="glass card hero">
+            <p class="muted">Último registro</p>
+            <p id="lastText" class="big">—</p>
+            <div class="chips">
+              <div class="chip"><span id="monthCount">0</span><small>este mes</small></div>
+              <div class="chip"><span id="weekAvg">0</span><small>por semana</small></div>
+            </div>
+          </div>
+          <button id="passCard" class="glass card pass-card" type="button">
+            <div class="pass-top">
+              <span class="pass-emoji">🎃</span>
+              <div class="pass-info">
+                <strong>Pase de temporada · Noche Encantada</strong>
+                <small id="passSub" class="muted"></small>
+              </div>
+              <span id="passBadge" class="pass-badge hidden">0</span>
+            </div>
+            <div class="pass-lvrow"><span class="pass-lv">Nivel <b id="passLv">0</b>/20</span><span id="passXp" class="muted small"></span></div>
+            <div class="track"><div id="passBar" class="fill" style="width:0%"></div></div>
+          </button>
+          <h2 class="sec">Últimos registros</h2>
+          <ul id="recent" class="rows"></ul>
+        </section>
+
+        <!-- HISTORIAL: calendario y estadísticas -->
+        <section id="view-historial" class="view">
+          <div class="seg glass subnav" data-idx="1">
+            <button data-goto="inicio">Resumen</button>
+            <button data-goto="historial">Historial</button>
+          </div>
+          <div id="segHist" class="seg glass" data-idx="0">
+            <button data-hseg="cal">Calendario</button>
+            <button data-hseg="stats">Estadísticas</button>
+          </div>
+
+          <div id="histCal" class="pane">
+            <div class="glass card">
+              <div class="cal-head">
+                <button id="prevMonth" class="icon-btn glass" aria-label="Mes anterior"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+                <strong id="monthLabel"></strong>
+                <button id="nextMonth" class="icon-btn glass" aria-label="Mes siguiente"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+              </div>
+              <div class="cal-grid cal-names"><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+              <div id="calGrid" class="cal-grid"></div>
+            </div>
+            <p class="muted small center">Toca un día para añadir un registro.</p>
+          </div>
+
+          <div id="histStats" class="pane hidden">
+            <div class="grid2">
+              <div class="glass stat"><p class="muted">Total</p><p id="totalCount" class="num">0</p></div>
+              <div class="glass stat"><p class="muted">Ánimo medio</p><p id="moodAvg" class="num">—</p></div>
+              <div class="glass stat"><p class="muted">Pausa actual</p><p id="curGap" class="num">—</p></div>
+              <div class="glass stat"><p class="muted">Mayor pausa</p><p id="maxGap" class="num">—</p></div>
+            </div>
+            <div class="glass card">
+              <h3>Últimas 8 semanas</h3>
+              <div id="chart" class="chart"></div>
+            </div>
+            <div class="glass card">
+              <h3>Por día de la semana</h3>
+              <div id="weekdayChart" class="chart"></div>
+            </div>
+            <div class="glass card">
+              <h3>Efecto</h3>
+              <div id="fxStats" class="fx-stats"></div>
+            </div>
+            <p class="muted small">Esto es solo información, sin juicios. Si algo de tus hábitos te genera malestar o sientes que no lo controlas, hablarlo con un profesional de la salud puede ayudar.</p>
+          </div>
+        </section>
+
+        <!-- TIENDA -->
+        <section id="view-tienda" class="view">
+          <div class="seg glass subnav" data-idx="1">
+            <button data-goto="duelos">Duelos</button>
+            <button data-goto="tienda">Tienda<i class="shop-dot hidden"></i></button>
+          </div>
+          <div class="glass card bal-card">
+            <span class="bal-roll" aria-hidden="true">🧻</span>
+            <div>
+              <p class="muted small">Tu saldo</p>
+              <p class="bal-num"><span id="rollBal">0</span> <small>rollos</small></p>
+            </div>
+          </div>
+
+          <button class="fold glass" data-fold="missions" data-target="missionsBody" aria-expanded="true">
+            <span class="fold-ico">🧻</span>
+            <span class="fold-t"><strong>Cómo conseguir rollos</strong><small>Misiones diarias y eventos</small></span>
+            <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div id="missionsBody" class="collapse"><div>
+            <ul id="missions" class="rows"></ul>
+          </div></div>
+
+          <h2 class="sec">Canjear</h2>
+          <p id="shopTimer" class="muted small shop-timer"></p>
+          <div id="shopSeg" class="seg seg5 glass" data-idx="0">
+            <button data-cat="icons">Iconos</button>
+            <button data-cat="skins">Fondos</button>
+            <button data-cat="colors">Nombre</button>
+            <button data-cat="frames">Marcos</button>
+            <button data-cat="bubbles">Burbujas</button>
+          </div>
+          <div id="shopGrid" class="shop-grid"></div>
+        </section>
+
+        <!-- DUELOS -->
+        <section id="view-duelos" class="view">
+          <div class="seg glass subnav" data-idx="0">
+            <button data-goto="duelos">Duelos</button>
+            <button data-goto="tienda">Tienda<i class="shop-dot hidden"></i></button>
+          </div>
+          <div class="glass card duel-top">
+            <div class="duel-cap">
+              <span class="duel-ico">⚔️</span>
+              <div>
+                <p class="bal-num"><span id="duelCapTxt">0</span><small> / 50 rollos hoy</small></p>
+                <p class="muted small" id="duelWins">Victorias: 0</p>
+              </div>
+            </div>
+            <div class="track"><div id="duelCapBar" class="fill" style="width:0%"></div></div>
+            <p id="duelPlays" class="muted small"></p>
+            <p class="muted small">Gana duelos para llevarte rollos 🧻. Máximo 50 al día. En 2 jugadores, pasad el móvil: cada uno juega en su lado.</p>
+          </div>
+          <h2 class="sec">Minijuegos</h2>
+          <ul id="duelList" class="rows"></ul>
+          <h2 class="sec">Torneos</h2>
+          <div id="tournBox" class="glass card tourn"></div>
+        </section>
+
+        <!-- AMIGOS -->
+        <section id="view-amigos" class="view">
+          <div id="seg" class="seg glass" data-idx="0">
+            <button data-seg="chats">Chats</button>
+            <button data-seg="friends">Amigos<span id="segBadge" class="badge xs hidden">0</span></button>
+          </div>
+          <p id="srvNotice" class="glass notice small muted">Sin servidor: tus amigos y chats se guardan solo en este móvil. Conecta tu servidor en Ajustes → Servidor para hablar con otros móviles.</p>
+
+          <div id="reqCard" class="glass card req-card">
+            <button id="reqHead" class="req-head" type="button" aria-expanded="false" aria-controls="reqBody">
+              <span class="req-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M19 8v6M16 11h6"/></svg></span>
+              <span class="req-title">Solicitudes de amistad</span>
+              <span id="reqCount" class="badge hidden">0</span>
+              <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div id="reqBody" class="collapse">
+              <div>
+                <div class="mycode-row">
+                  <span class="muted small">Tu código</span>
+                  <button id="copyCode2" class="code-chip" type="button" aria-label="Copiar mi código"><b id="myCode2">0000AAA</b><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></svg></button>
+                </div>
+                <p class="label">Añadir con el código de otra persona</p>
+                <div class="code-in">
+                  <input id="codeInput" type="text" maxlength="7" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="4827KQM">
+                  <button id="sendReq" class="btn primary sm" type="button">Enviar</button>
+                </div>
+                <p id="codeMsg" class="small code-msg"></p>
+                <p class="label">Solicitudes recibidas</p>
+                <ul id="reqIn" class="rows tight"></ul>
+                <div id="reqOutBox">
+                  <p class="label">Enviadas, pendientes de respuesta</p>
+                  <ul id="reqOut" class="rows tight"></ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ul id="chatList" class="rows"></ul>
+          <ul id="friendList" class="rows hidden"></ul>
+          <button id="segAdd" class="btn primary wide">+ Crear grupo</button>
+        </section>
+
+        <!-- PERFIL -->
+        <section id="view-perfil" class="view">
+          <div class="glass card prof-card">
+            <button id="avaBig" class="ava-big" aria-label="Cambiar foto de perfil"></button>
+            <input id="photoInput" type="file" accept="image/*" hidden>
+            <input id="nameInput" class="name-input" type="text" maxlength="20" placeholder="Tu nombre" autocomplete="off">
+            <div class="prof-streak"><span id="profStreak" class="streak-pill"></span></div>
+            <div class="row2">
+              <button id="photoBtn" class="btn" type="button">Cambiar foto</button>
+              <button id="photoDel" class="btn" type="button">Quitar foto</button>
+            </div>
+          </div>
+
+          <div class="glass card code-card">
+            <p class="muted small">Tu código de amigo</p>
+            <p id="myCode" class="code" aria-live="polite"></p>
+            <button id="copyCode" class="btn wide" type="button">Copiar código</button>
+          </div>
+
+          <button class="fold glass" data-fold="inv" data-target="invBody" aria-expanded="false">
+            <span class="fold-ico">🎒</span>
+            <span class="fold-t"><strong>Inventario</strong><small id="invCount">0 objetos</small></span>
+            <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div id="invBody" class="collapse"><div>
+            <div id="invSeg" class="seg seg5 glass" data-idx="0">
+              <button data-icat="icons">Iconos</button>
+              <button data-icat="skins">Fondos</button>
+              <button data-icat="colors">Nombre</button>
+              <button data-icat="frames">Marcos</button>
+              <button data-icat="bubbles">Burbujas</button>
+            </div>
+            <div id="invGrid" class="shop-grid"></div>
+            <p id="invHint" class="muted small hidden">Aún no tienes nada de esta categoría. Canjea rollos en la Tienda 🧻</p>
+          </div></div>
+
+          <button id="achDoneTitle" class="fold glass" data-fold="achDone" data-target="achDoneBody" aria-expanded="true">
+            <span class="fold-ico">🏅</span>
+            <span class="fold-t"><strong id="achDoneLbl">Logros completados</strong></span>
+            <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div id="achDoneBody" class="collapse open"><div><ul id="achDone" class="rows"></ul></div></div>
+
+          <button id="achTodoTitle" class="fold glass" data-fold="achTodo" data-target="achTodoBody" aria-expanded="true">
+            <span class="fold-ico">🎯</span>
+            <span class="fold-t"><strong id="achTodoLbl">Por completar</strong></span>
+            <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div id="achTodoBody" class="collapse open"><div><ul id="achTodo" class="rows"></ul></div></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra inferior -->
+  <button id="xpTop" class="xp-top glass hidden" type="button" aria-label="Pase de temporada">
+    <span id="xpTopLv" class="xp-lv">Nv 0</span>
+    <span class="xp-track"><i id="xpTopFill" class="xp-fill"></i></span>
+    <span id="xpTopTxt" class="xp-txt">0/100 XP</span>
+  </button>
+
+  <nav id="tabbar" class="tabbar glass hidden" aria-label="Secciones">
+    <span id="tabInd" class="tab-ind" aria-hidden="true"></span>
+    <button class="tab active" data-tab="inicio" aria-label="Inicio">
+      <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      <span class="tab-l">Inicio</span>
+    </button>
+    <button class="tab" data-tab="duelos" aria-label="Juegos">
+      <svg viewBox="0 0 24 24"><path d="M20 4L9 15M7.5 13.5l3 3M9 15l-4 4M4 4l11 11M16.5 13.5l-3 3M15 15l4 4"/></svg>
+      <span class="tab-l">Juegos</span>
+      <i class="shop-dot hidden"></i>
+    </button>
+    <button id="fab" class="fab" aria-label="Nuevo registro">
+      <svg viewBox="0 0 24 24" style="stroke-width:2.4"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+    <button class="tab" data-tab="amigos" aria-label="Amigos">
+      <svg viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z"/></svg>
+      <span class="tab-l">Amigos</span>
+      <span id="badge" class="badge hidden">0</span>
+    </button>
+    <button class="tab" data-tab="perfil" aria-label="Perfil">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+      <span class="tab-l">Perfil</span>
+    </button>
+  </nav>
+
+  <!-- Chat (pantalla completa) -->
+  <div id="chat" class="overlay" aria-hidden="true">
+    <header class="ov-head glass">
+      <button id="chatBack" class="icon-btn" aria-label="Volver"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <button id="chatInfo" class="chat-title">
+        <span id="chatAvatar" class="avatar"></span>
+        <span class="titles"><strong id="chatName"></strong><small id="chatMembers" class="muted"></small></span>
+      </button>
+    </header>
+    <div id="msgs" class="msgs"></div>
+    <form id="composer" class="composer glass" autocomplete="off">
+      <button type="button" id="evBtn" class="ev-btn" aria-label="Eventos del chat">
+        <svg viewBox="0 0 24 24"><path d="M11 3l1.8 4.7 4.7 1.8-4.7 1.8L11 16l-1.8-4.7L4.5 9.5l4.7-1.8z"/><path d="M18.5 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg>
+      </button>
+      <input id="msgInput" type="text" placeholder="Escribe un mensaje" maxlength="500">
+      <button class="send" aria-label="Enviar"><svg viewBox="0 0 24 24"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/></svg></button>
+    </form>
+  </div>
+
+  <!-- Duelo (pantalla completa) -->
+  <div id="duel" class="overlay" aria-hidden="true">
+    <header class="ov-head glass">
+      <button id="duelBack" class="icon-btn" aria-label="Salir del duelo"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="titles"><strong id="duelTitle">Duelo</strong><small id="duelSub" class="muted"></small></div>
+    </header>
+    <div id="duelStage" class="duel-stage">
+      <canvas id="duelCv" width="360" height="560"></canvas>
+      <div id="duelEnd" class="duel-end glass hidden">
+        <p id="duelEmoji" class="duel-emoji">🏆</p>
+        <h2 id="duelRes"></h2>
+        <p id="duelMsg" class="muted"></p>
+        <div class="row2">
+          <button id="duelAgain" class="btn primary" type="button">Revancha</button>
+          <button id="duelExit" class="btn" type="button">Salir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ajustes (pantalla completa) -->
+  <div id="pass" class="overlay" aria-hidden="true">
+    <header class="ov-head glass">
+      <button id="passBack" class="icon-btn" aria-label="Volver"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <h2 id="passTitle" style="margin:0">Pase de temporada</h2>
+    </header>
+    <div class="ov-body">
+      <div id="passHero" class="glass card pass-hero">
+        <p class="pass-big">Nivel <b id="passBigLv">0</b> <span class="muted">/ 20</span></p>
+        <div class="track"><div id="passBigBar" class="fill" style="width:0%"></div></div>
+        <p id="passBigXp" class="muted small"></p>
+        <p id="passDays" class="muted small"></p>
+        <p class="muted small">Gana XP con todo lo que te da rollos: registros, chats, logros, duelos y eventos.</p>
+        <button id="passPremBtn" class="btn primary wide" type="button">Desbloquear premium</button>
+        <p id="passPremOn" class="small hidden">✨ Pase premium activo</p>
+        <button id="passAll" class="btn wide hidden" type="button">Reclamar todo</button>
+      </div>
+      <div id="passSeg" class="seg glass" data-idx="0">
+        <button data-track="free">Gratis</button>
+        <button data-track="premium">✨ Premium</button>
+      </div>
+      <ul id="passList" class="rows"></ul>
+    </div>
+  </div>
+
+  <div id="settings" class="overlay" aria-hidden="true">
+    <header class="ov-head glass">
+      <button id="settingsBack" class="icon-btn" aria-label="Volver"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <h2 style="margin:0">Ajustes</h2>
+    </header>
+    <div class="ov-body">
+      <div class="glass card">
+        <h3>Apariencia</h3>
+        <p class="muted small">Tema de la app</p>
+        <div id="themeSeg" class="seg seg3 glass" data-idx="0">
+          <button data-theme-opt="auto">Automático</button>
+          <button data-theme-opt="day">Día</button>
+          <button data-theme-opt="night">Noche</button>
+        </div>
+        <p class="muted small">Automático: día de 6:00 a 20:00 y noche el resto.</p>
+        <p class="muted small" style="margin-top:16px">Idioma</p>
+        <div id="langSeg" class="seg glass" data-idx="0">
+          <button data-lang="es">Español</button>
+          <button data-lang="en">English</button>
+        </div>
+      </div>
+      <div class="glass card">
+        <h3>Cuenta</h3>
+        <div id="accIn" class="hidden">
+          <p><strong id="accName"></strong></p>
+          <p id="accMail" class="muted small" translate="no"></p>
+          <button id="btnLogout" class="btn wide" type="button">Cerrar sesión</button>
+        </div>
+        <div id="accOut">
+          <p class="muted small">No has iniciado sesión.</p>
+          <button id="btnLogin" class="btn primary wide" type="button">Iniciar sesión con Google</button>
+        </div>
+        <p class="muted small">Tus datos se guardan solo en este navegador.</p>
+      </div>
+      <div class="glass card">
+        <h3>Ayuda</h3>
+        <p class="muted small">Un repaso guiado por todas las secciones de la app.</p>
+        <button id="btnTour" class="btn wide">Ver el tutorial</button>
+      </div>
+      <div class="glass card" id="habitCard">
+        <h3>Hábitos</h3>
+        <p class="muted small">Todo es opcional. Puedes apagar lo que no te sirva.</p>
+        <label class="switchrow"><span><strong>Meta del día</strong><small class="muted">Un pequeño reto distinto cada día</small></span><input type="checkbox" id="rsGoal" class="switch"></label>
+        <label class="switchrow"><span><strong>Protector de racha</strong><small class="muted">Perdona un día suelto si ya llevabas racha</small></span><input type="checkbox" id="rsShield" class="switch"></label>
+        <label class="switchrow"><span><strong>Resumen semanal</strong><small class="muted">Domingo y lunes, con tus propios datos</small></span><input type="checkbox" id="rsWeekly" class="switch"></label>
+        <label class="switchrow"><span><strong>Misiones semanales</strong><small class="muted">Tres objetivos suaves cada semana</small></span><input type="checkbox" id="rsMissions" class="switch"></label>
+        <label class="switchrow"><span><strong>Recordatorio diario</strong><small class="muted">Un solo aviso al día, con la app abierta</small></span><input type="checkbox" id="rsRemind" class="switch"></label>
+        <label id="rsRemindRow" class="hidden">Hora del recordatorio<input type="time" id="rsRemindAt" value="21:00"></label>
+      </div>
+      <div class="glass card">
+        <h3>Avisos</h3>
+        <p class="muted small">Recibe una notificación del navegador cuando un amigo escriba o registre algo.</p>
+        <button id="btnBrowserNotif" class="btn wide">Activar avisos del navegador</button>
+      </div>
+      <div class="glass card">
+        <h3>Tus datos</h3>
+        <div class="row2">
+          <button id="exportBtn" class="btn">Exportar</button>
+          <label class="btn filebtn">Importar<input id="importFile" type="file" accept="application/json" hidden></label>
+        </div>
+        <button id="wipeEntries" class="btn danger wide">Borrar mis registros</button>
+        <button id="wipeSocial" class="btn danger wide">Borrar amigos y chats</button>
+      </div>
+      <div class="glass card" id="srvCard">
+        <h3>Servidor <span id="srvDot" class="srv-dot none" aria-hidden="true"></span></h3>
+        <p id="srvState" class="muted small"></p>
+        <label>Dirección del servidor
+          <input id="srvUrl" type="url" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://tu-servidor.duckdns.org">
+        </label>
+        <button id="srvSave" class="btn wide" type="button">Guardar y conectar</button>
+        <button id="srvNewCode" class="btn danger wide hidden" type="button">Cambiar mi código</button>
+        <p class="muted small">Déjalo vacío si abres la app desde tu propio servidor.</p>
+      </div>
+      <details class="glass card fold-card" id="simCard">
+        <summary>Modo prueba <span class="muted small">para probar sin servidor</span></summary>
+        <p class="muted small">Simula a otras personas para probar chats, avisos y solicitudes sin servidor.</p>
+        <button id="btnSim" class="btn wide">Simular actividad de un amigo</button>
+        <button id="btnSimReq" class="btn wide">Simular solicitud de amistad recibida</button>
+        <button id="btnSimAccept" class="btn wide">Simular que aceptan mi solicitud</button>
+        <button id="btnSimEv" class="btn wide">Simular evento lanzado por un amigo</button>
+        <button id="btnRolls" class="btn wide">Regalarme 50 rollos de papel</button>
+        <button id="btnSimEvStep" class="btn wide">Simular que un amigo participa en un evento</button>
+      </details>
+    </div>
+  </div>
+
+  <!-- Hojas inferiores -->
+  <div id="backdrop" class="backdrop"></div>
+
+  <div id="sheetLog" class="sheet glass">
+    <div class="grab"></div>
+    <h2>Nuevo registro</h2>
+    <div class="two">
+      <label>Fecha<input type="date" id="fDate"></label>
+      <label>Hora<input type="time" id="fTime"></label>
+    </div>
+    <p class="label">Cómo te sentiste después</p>
+    <div class="moods">
+      <label><input type="radio" name="mood" value="1" aria-label="Mal"><span>😞</span></label>
+      <label><input type="radio" name="mood" value="2" aria-label="Regular"><span>😕</span></label>
+      <label><input type="radio" name="mood" value="3" aria-label="Normal" checked><span>😐</span></label>
+      <label><input type="radio" name="mood" value="4" aria-label="Bien"><span>🙂</span></label>
+      <label><input type="radio" name="mood" value="5" aria-label="Genial"><span>😄</span></label>
+    </div>
+    <p class="label">Efecto (opcional)</p>
+    <div id="fxRow" class="fx-row" role="group" aria-label="Efecto">
+      <button type="button" class="fx" data-fx="1" aria-pressed="false"><span>✨</span><small>Limpio</small></button>
+      <button type="button" class="fx" data-fx="2" aria-pressed="false"><span>💧</span><small>Gotas</small></button>
+      <button type="button" class="fx" data-fx="3" aria-pressed="false"><span>💦</span><small>Manchó</small></button>
+      <button type="button" class="fx" data-fx="4" aria-pressed="false"><span>🌊</span><small>Desastre</small></button>
+    </div>
+    <label>Nota (opcional)<textarea id="fNote" rows="2" maxlength="200"></textarea></label>
+    <div id="notifyBox" class="hidden">
+      <label class="switchrow">
+        <span><strong>Avisar a mis grupos</strong><small id="notifyHint" class="muted"></small></span>
+        <input type="checkbox" id="fNotify" class="switch">
+      </label>
+      <div id="noteCollapse" class="collapse open">
+        <div>
+          <label class="switchrow">
+            <span><strong>Incluir mi nota</strong><small class="muted">Si lo desactivas, solo verán tu ánimo.</small></span>
+            <input type="checkbox" id="fShareNote" class="switch" checked>
+          </label>
+          <label class="switchrow">
+            <span><strong>Incluir el efecto</strong><small class="muted">Si lo desactivas, el chat no verá el emoji de efecto.</small></span>
+            <input type="checkbox" id="fShareFx" class="switch" checked>
+          </label>
+        </div>
+      </div>
+    </div>
+    <button id="saveLog" class="btn primary wide">Guardar</button>
+  </div>
+
+  <div id="sheetGroup" class="sheet glass">
+    <div class="grab"></div>
+    <h2>Nuevo grupo</h2>
+    <label>Nombre del grupo<input type="text" id="groupName" maxlength="30" placeholder="Ej. Los de siempre"></label>
+    <p class="label">Miembros</p>
+    <div id="groupFriends"></div>
+    <label class="switchrow">
+      <span><strong>Avisar al grupo cuando registre</strong><small class="muted">El chat verá tu ánimo y, si quieres, tu nota.</small></span>
+      <input type="checkbox" id="gNotify" class="switch" checked>
+    </label>
+    <button id="saveGroup" class="btn primary wide">Crear grupo</button>
+  </div>
+
+  <div id="sheetGroupInfo" class="sheet glass">
+    <div class="grab"></div>
+    <h2 id="giName">Grupo</h2>
+    <p id="giMembers" class="muted"></p>
+    <label class="switchrow">
+      <span><strong>Avisar cuando registre</strong><small class="muted">Cada vez que subas un registro, este chat verá tu ánimo y tu nota.</small></span>
+      <input type="checkbox" id="giNotify" class="switch">
+    </label>
+    <button id="giDelete" class="btn danger wide">Eliminar grupo</button>
+  </div>
+
+  <!-- Eventos del chat: elegir tipo y configurarlo -->
+  <div id="sheetEvents" class="sheet glass">
+    <div class="grab"></div>
+    <div id="evPick">
+      <h2>Eventos</h2>
+      <p id="evPickHint" class="muted small"></p>
+      <div id="evTypes" class="ev-types"></div>
+    </div>
+    <div id="evForm" class="hidden">
+      <button id="evBack" class="ev-back" type="button">‹ Eventos</button>
+      <h2 id="evFormTitle">Evento</h2>
+      <p id="evFormDesc" class="muted small"></p>
+      <div id="evQWrap" class="hidden">
+        <label>Pregunta<input type="text" id="evQ" maxlength="80" placeholder="Ej. ¿Qué hacemos el finde?"></label>
+        <div class="ev-opts">
+          <input type="text" id="evOpt1" maxlength="40" placeholder="Opción 1">
+          <input type="text" id="evOpt2" maxlength="40" placeholder="Opción 2">
+          <input type="text" id="evOpt3" maxlength="40" placeholder="Opción 3 (opcional)">
+          <input type="text" id="evOpt4" maxlength="40" placeholder="Opción 4 (opcional)">
+        </div>
+      </div>
+      <div id="evGoalWrap" class="hidden">
+        <p class="label">Meta de registros</p>
+        <div id="evGoal" class="chip-row"></div>
+      </div>
+      <p class="label">Duración</p>
+      <div id="evDur" class="chip-row"></div>
+      <button id="evLaunch" class="btn primary wide" type="button">Lanzar evento</button>
+    </div>
+  </div>
+
+  <div id="sheetTourn" class="sheet glass">
+    <div class="grab"></div>
+    <h2>Nuevo torneo 🏆</h2>
+    <p class="muted small">3 rondas: air hockey, carrera y reflejos. Cada jugador pone rollos en el bote y quien gane más rondas se lo lleva todo.</p>
+    <p class="label">Invita a tus amigos (hasta 3)</p>
+    <div id="tFriends" class="chip-row wrap"></div>
+    <p id="tNoFriends" class="muted small hidden">Aún no tienes amigos. Añade uno con su código en Amigos.</p>
+    <p class="label">Rollos por jugador</p>
+    <div id="tFee" class="chip-row"></div>
+    <p class="muted small">Tus amigos son simulados por el robot: así el torneo se puede jugar sin que estén conectados. Para jugar contra una persona de verdad usa «En línea» en cada juego.</p>
+    <p id="tSum" class="muted small"></p>
+    <button id="tCreate" class="btn primary wide" type="button">Crear torneo</button>
+  </div>
+
+  <div id="sheetChallenge" class="sheet glass">
+    <div class="grab"></div>
+    <h2>Retar a un amigo 🎮</h2>
+    <p class="muted small"><strong id="chWho" translate="no"></strong> recibirá la invitación al momento. Si acepta, la partida empieza sola.</p>
+    <div id="chGames" class="ch-games"></div>
+  </div>
+
+  <div id="sheetInv" class="sheet glass">
+    <div class="grab"></div>
+    <h2>¡Te han retado! 🎮</h2>
+    <p><strong id="invWho" translate="no"></strong> te reta a <strong id="invGame"></strong></p>
+    <div class="row2">
+      <button id="invNo" class="btn" type="button">Rechazar</button>
+      <button id="invYes" class="btn primary" type="button">Aceptar</button>
+    </div>
+  </div>
+
+  <div id="sheetOnline" class="sheet glass">
+    <div class="grab"></div>
+    <h2 id="olTitle">Jugar en línea 🌐</h2>
+    <p class="muted small">Cada uno juega desde su móvil. Uno crea la partida y le da al otro un código de 5 letras y 3 números.</p>
+    <div id="olChoose">
+      <div class="row2">
+        <button id="olHost" class="btn primary" type="button">Crear partida</button>
+        <button id="olJoin" class="btn" type="button">Unirme con un código</button>
+      </div>
+      <button id="olManual" class="btn sm wide ol-alt" type="button">¿No conecta? Usar códigos largos (sin servidor)</button>
+    </div>
+    <div id="olRoomBox" class="hidden">
+      <p class="label">Tu código: díselo a tu rival</p>
+      <p id="olCode" class="code ol-code" aria-live="polite">········</p>
+      <button id="olCopyCode" class="btn sm wide" type="button">Copiar código</button>
+      <p class="muted small">Esperando a que tu rival se una… La partida empieza sola.</p>
+    </div>
+    <div id="olJoinCodeBox" class="hidden">
+      <label>Código de la partida
+        <input id="olCodeIn" class="ol-input" type="text" maxlength="8" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="ABCDE123">
+      </label>
+      <button id="olJoinGo" class="btn primary wide" type="button">Unirme</button>
+    </div>
+    <div id="olManualChoose" class="hidden">
+      <div class="row2">
+        <button id="olHostM" class="btn primary" type="button">Crear partida</button>
+        <button id="olJoinM" class="btn" type="button">Unirme con un código largo</button>
+      </div>
+    </div>
+    <div id="olHostBox" class="hidden">
+      <p class="label">1 · Envía este código a tu rival</p>
+      <textarea id="olOffer" class="code-box" readonly rows="3"></textarea>
+      <button id="olCopyOffer" class="btn sm" type="button">Copiar código</button>
+      <p class="label">2 · Pega aquí la respuesta que te devuelva</p>
+      <textarea id="olAnswerIn" class="code-box" rows="3" placeholder="JK1-…"></textarea>
+      <button id="olConnect" class="btn primary wide" type="button">Conectar</button>
+    </div>
+    <div id="olJoinBox" class="hidden">
+      <p class="label">1 · Pega el código de tu rival</p>
+      <textarea id="olOfferIn" class="code-box" rows="3" placeholder="JK1-…"></textarea>
+      <button id="olMake" class="btn primary wide" type="button">Generar respuesta</button>
+      <div id="olAnswerBox" class="hidden">
+        <p class="label">2 · Envíale este código de vuelta</p>
+        <textarea id="olAnswer" class="code-box" readonly rows="3"></textarea>
+        <button id="olCopyAnswer" class="btn sm" type="button">Copiar código</button>
+      </div>
+    </div>
+    <p id="olMsg" class="muted small"></p>
+  </div>
+
+  <div id="tour" class="tour hidden" aria-live="polite">
+    <div id="tourHole" class="tour-hole none"></div>
+    <div id="tourCard" class="tour-card glass">
+      <p id="tourN" class="muted small"></p>
+      <h3 id="tourT"></h3>
+      <p id="tourD"></p>
+      <div class="row2">
+        <button id="tourSkip" class="btn" type="button">Saltar</button>
+        <button id="tourPrev" class="btn hidden" type="button">Atrás</button>
+        <button id="tourNext" class="btn primary" type="button">Siguiente</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast glass" role="status" aria-live="polite"></div>
+
+  <script src="config.js"></script>
+  <script src="i18n.js"></script>
+  <script src="duels.js"></script>
+  <script src="srv.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
